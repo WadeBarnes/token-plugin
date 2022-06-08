@@ -3,23 +3,21 @@ FROM gitpod/workspace-full as base
 User gitpod
 
 RUN DEBIAN_FRONTEND=noninteractive sudo apt-get update && sudo apt-get upgrade -y
-
-RUN sudo apt-get update -y &&\
-    sudo add-apt-repository 'deb http://security.ubuntu.com/ubuntu bionic main' &&\
-    sudo apt-get install -y --allow-downgrades \
-    # common stuff
+# common stuff
+# Python
+# rocksdb python wrapper
+RUN sudo apt-get update -y && sudo apt-get install software-properties-common && \
+    sudo add-apt-repository "deb http://security.ubuntu.com/ubuntu bionic main" &&\
+    sudo apt-get install -y \
     git \
     wget \
     apt-transport-https \
     ca-certificates \
     apt-utils \
     nano \
-    software-properties-common \
     supervisor \ 
-    # Python
     python3-pip \
     python3-nacl \
-    # rocksdb python wrapper
     rocksdb-tools \
     librocksdb5.17 \
     librocksdb-dev \
@@ -30,13 +28,13 @@ RUN sudo apt-get update -y &&\
 # fails when executed in one command with other pip install packages
 # RUN pip install python-rocksdb
 
-RUN sudo add-apt-repository 'deb http://security.ubuntu.com/ubuntu bionic-security main' && \
+RUN sudo add-apt-repository "deb http://security.ubuntu.com/ubuntu bionic-security main" && \
     sudo apt-get update && sudo apt-get install -y \ 
     libssl1.0.0 \
     libssl1.1
 # Indy Node and Plenum
 RUN sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CE7709D068DB5E88 &&\
-    sudo add-apt-repository 'deb https://repo.sovrin.org/deb bionic master' &&\
+    sudo add-apt-repository "deb https://repo.sovrin.org/deb bionic master" &&\
     sudo apt-get update && sudo apt-get install -y \ 
     ursa
 # install fpm
@@ -126,5 +124,4 @@ RUN pip3 install -U \
 COPY ./deps .
 RUN sudo dpkg -i libsovtoken_1.0.2_amd64.deb
 
-RUN mkdir -p /etc/indy && touch /etc/indy/indy_config.py && echo "ENABLED_PLUGINS = ['sovtoken', 'sovtokenfees']" > /etc/indy/indy_config.py
-
+RUN sudo mkdir -p /etc/indy && sudo touch /etc/indy/indy_config.py && sudo sh -c "echo \"ENABLED_PLUGINS = ['sovtoken', 'sovtokenfees']\" > /etc/indy/indy_config.py"
