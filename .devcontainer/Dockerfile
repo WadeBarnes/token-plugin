@@ -1,59 +1,52 @@
-# See here for image contents: https://github.com/microsoft/vscode-dev-containers/tree/v0.234.0/containers/ubuntu/.devcontainer/base.Dockerfile
+ARG VARIANT="focal"
+FROM mcr.microsoft.com/vscode/devcontainers/base:${VARIANT}
 
-# [Choice] Ubuntu version (use ubuntu-22.04 or ubuntu-18.04 on local arm64/Apple Silicon): ubuntu-22.04, ubuntu-20.04, ubuntu-18.04
-ARG VARIANT="jammy"
-FROM mcr.microsoft.com/vscode/devcontainers/base:0-${VARIANT}
-# See here for image contents: https://github.com/microsoft/vscode-dev-containers/tree/v0.234.0/containers/ubuntu/.devcontainer/base.Dockerfile
-
-
-# [Optional] Uncomment this section to install additional OS packages.
-#RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
-#     && apt-get -y install --no-install-recommends \
-#        make
-
-# common stuff
-# rocksdb python wrapper
-# Python
-RUN apt-get update -y && apt-get install -y software-properties-common && \
-    add-apt-repository 'deb http://security.ubuntu.com/ubuntu bionic main' &&\
-    apt-get install -y \
+RUN apt-get update -y \
+    && echo "deb http://security.ubuntu.com/ubuntu bionic main"  >> /etc/apt/sources.list \
+    && apt-get install -y --allow-downgrades \
+    # common stuff
     git \
     wget \
     apt-transport-https \
     ca-certificates \
     apt-utils \
     nano \
+    software-properties-common \
     supervisor \ 
+    # Python
     python3-pip \
     python3-nacl \
+    # rocksdb python wrapper
     rocksdb-tools \
     librocksdb5.17 \
     librocksdb-dev \
     libsnappy-dev \
     liblz4-dev \
-    libbz2-dev
+    libbz2-dev \
+    docker-compose \
+    && rm -rf /var/lib/apt/lists/*
 
 # fails when executed in one command with other pip install packages
 # RUN pip install python-rocksdb
 
-# RUN add-apt-repository 'deb http://security.ubuntu.com/ubuntu bionic-security main' && \
-#     apt-get update && apt-get install -y \ 
-#     libssl1.0.0 \
-#     libssl1.1
-
-
-# Indy Node and Plenum
-RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CE7709D068DB5E88 &&\
-    add-apt-repository 'deb https://repo.sovrin.org/deb bionic master' &&\
+RUN echo "deb http://security.ubuntu.com/ubuntu bionic-security main"  >> /etc/apt/sources.list && \
     apt-get update && apt-get install -y \ 
+    libssl1.0.0 \
+    libssl1.1
+# Indy Node and Plenum
+RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CE7709D068DB5E88 \
+    && echo "deb https://repo.sovrin.org/deb bionic master" >> /etc/apt/sources.list \
+    && apt-get update && apt-get install -y \ 
     ursa
 # install fpm
 ENV FPM_VERSION=1.9.3
-RUN apt-add-repository ppa:brightbox/ruby-ng &&\
-    apt-get install -y --no-install-recommends \
+RUN apt-get update \
+    && apt-add-repository ppa:brightbox/ruby-ng \
+    && apt-get install -y --no-install-recommends \
     ruby2.6 \
-    ruby2.6-dev &&\
-    gem install --no-document rake fpm:$FPM_VERSION 
+    ruby2.6-dev \
+    && gem install --no-document rake fpm:$FPM_VERSION \
+    && rm -rf /var/lib/apt/lists/*
 
 # Need to move libursa.so to parent dir
 RUN mv /usr/lib/ursa/* /usr/lib && rm -rf /usr/lib/ursa
@@ -61,15 +54,14 @@ RUN mv /usr/lib/ursa/* /usr/lib && rm -rf /usr/lib/ursa
 # Indy SDK
 # RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CE7709D068DB5E88 || \
 # 	apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys CE7709D068DB5E88 && \
-RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 68DB5E88 &&\ 
-    apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 9692C00E657DDE61 &&\ 
-    add-apt-repository "deb https://hyperledger.jfrog.io/artifactory/indy focal dev" &&\
-    add-apt-repository "deb https://repo.sovrin.org/deb xenial master" &&\
-    add-apt-repository "deb https://repo.sovrin.org/sdk/deb xenial master" &&\
-    add-apt-repository "deb https://repo.sovrin.org/sdk/deb bionic master" &&\
-    add-apt-repository "deb http://archive.ubuntu.com/ubuntu xenial universe main" 
-    
-RUN apt-get update && apt-get install -y \ 
+RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 68DB5E88 \ 
+    && apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 9692C00E657DDE61 \ 
+    && echo "deb https://hyperledger.jfrog.io/artifactory/indy focal dev" >> /etc/apt/sources.list \
+    && echo "deb https://repo.sovrin.org/sdk/deb xenial master"  >> /etc/apt/sources.list \
+    && echo "deb https://repo.sovrin.org/sdk/deb bionic master"  >> /etc/apt/sources.list \
+    && echo "deb http://archive.ubuntu.com/ubuntu xenial universe main"  >> /etc/apt/sources.list \
+    && echo "deb https://repo.sovrin.org/deb xenial master"  >> /etc/apt/sources.list \
+    && apt-get update -y && apt-get install -y \ 
     libindy=1.15.0~1625-bionic \
     indy-plenum=1.13.0.dev.0 \
     indy-node=1.13.0.dev.0 \
@@ -113,8 +105,7 @@ RUN pip3 install -U \
     python-dateutil==2.6.1 \
     python-rocksdb==0.7.0 \
     python-ursa==0.1.1 \
-    #indysdk bug
-    python3-indy\
+    python3-indy==1.15.0-dev-1625 \
     pyzmq==18.1.0 \
     rlp==0.6.0 \
     semver==2.13.0 \
@@ -131,3 +122,8 @@ RUN pip3 install -U \
     mock
 # virtualenv \
 # python-rocksdb==0.7
+
+RUN mkdir -p /etc/indy && echo "ENABLED_PLUGINS = ['sovtoken', 'sovtokenfees']" > /etc/indy/indy_config.py
+
+RUN apt-get -y autoremove
+
