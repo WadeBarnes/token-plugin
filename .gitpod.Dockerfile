@@ -1,14 +1,14 @@
-FROM gitpod/workspace-full as base
+FROM gitpod/workspace-base as base
 
-User gitpod
+USER gitpod
 
-RUN DEBIAN_FRONTEND=noninteractive sudo apt-get update && sudo apt-get upgrade -y
 # common stuff
 # Python
 # rocksdb python wrapper
-RUN sudo apt-get update -y && sudo apt-get install software-properties-common && \
-    sudo add-apt-repository "deb http://security.ubuntu.com/ubuntu bionic main" &&\
-    sudo apt-get install -y \
+RUN sudo apt-get update \
+    && sudo apt-get install software-properties-common \
+    && sudo add-apt-repository "deb http://security.ubuntu.com/ubuntu bionic main" \
+    && sudo apt-get install -y \
     git \
     wget \
     apt-transport-https \
@@ -27,16 +27,17 @@ RUN sudo apt-get update -y && sudo apt-get install software-properties-common &&
 
 # fails when executed in one command with other pip install packages
 # RUN pip install python-rocksdb
-
 RUN sudo add-apt-repository "deb http://security.ubuntu.com/ubuntu bionic-security main" && \
     sudo apt-get update && sudo apt-get install -y \ 
     libssl1.0.0 \
     libssl1.1
+
 # Indy Node and Plenum
 RUN sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CE7709D068DB5E88 &&\
     sudo add-apt-repository "deb https://repo.sovrin.org/deb bionic master" &&\
     sudo apt-get update && sudo apt-get install -y \ 
     ursa
+
 # install fpm
 ENV FPM_VERSION=1.9.3
 RUN sudo apt-add-repository ppa:brightbox/ruby-ng &&\
@@ -51,7 +52,8 @@ RUN sudo mv /usr/lib/ursa/* /usr/lib && sudo rm -rf /usr/lib/ursa
 # Indy SDK
 # RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CE7709D068DB5E88 || \
 # 	apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys CE7709D068DB5E88 && \
-RUN sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 68DB5E88 &&\ 
+RUN sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 68DB5E88 &&\
+    sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 9692C00E657DDE61 &&\
     sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 9692C00E657DDE61 &&\ 
     sudo add-apt-repository "deb https://hyperledger.jfrog.io/artifactory/indy focal dev" &&\
     sudo add-apt-repository "deb https://repo.sovrin.org/deb xenial master" &&\
@@ -64,8 +66,9 @@ RUN sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 68DB5E88 &&\
     indy-node=1.13.0.dev.0 \
     libsodium23
 
+ENV PATH "$PATH:/home/gitpod/.local/bin"
 # pypi based packages
-RUN pip3 install -U \ 
+RUN pip3 install -U --user\ 
     Pygments==2.2.0 \
     Pympler==0.8 \
     PyNaCl==1.3.0 \
@@ -102,8 +105,7 @@ RUN pip3 install -U \
     python-dateutil==2.6.1 \
     python-rocksdb==0.7.0 \
     python-ursa==0.1.1 \
-    #indysdk bug
-    python3-indy\
+    python3-indy==1.15.0-dev-1625 \
     pyzmq==18.1.0 \
     rlp==0.6.0 \
     semver==2.13.0 \
