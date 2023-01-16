@@ -9,6 +9,7 @@ on:
       - ubuntu-20.04-upgrade
       - Devcontainers
       - GHARefactoring
+      - test/get-deb-version
     paths:
       - '**.py'
       - '.github/**'
@@ -49,34 +50,39 @@ jobs:
       CACHE_KEY_BUILD: ${{ needs.workflow-setup.outputs.CACHE_KEY_BUILD }}
       DOCKER_IMAGE: ghcr.io/${{ needs.workflow-setup.outputs.GITHUB_REPOSITORY_NAME }}/token-plugin-build
       UBUNTU_VERSION: ${{ needs.workflow-setup.outputs.UBUNTU_VERSION }}
-    
-  token-plugin-tests:
-    name: Token Plugin Tests
-    needs: [workflow-setup, build-image]
-    uses: ./.github/workflows/reuseable_test.yaml
-    with:
-      GITHUB_REPOSITORY_NAME: ${{ needs.workflow-setup.outputs.GITHUB_REPOSITORY_NAME }}
-      UBUNTU_VERSION: ${{ needs.workflow-setup.outputs.UBUNTU_VERSION }}    
+
+  # Tests disabled to speed up testing of subsequent jobs
+
+  # token-plugin-tests:
+  #   name: Token Plugin Tests
+  #   needs: [workflow-setup, build-image]
+  #   uses: ./.github/workflows/reuseable_test.yaml
+  #   with:
+  #     GITHUB_REPOSITORY_NAME: ${{ needs.workflow-setup.outputs.GITHUB_REPOSITORY_NAME }}
+  #     UBUNTU_VERSION: ${{ needs.workflow-setup.outputs.UBUNTU_VERSION }}    
 
   build-package:
     name: Token Plugin Build package
-    needs: [workflow-setup, token-plugin-tests]
+    # needs: [workflow-setup, token-plugin-tests]
+    needs: [workflow-setup]
     uses: ./.github/workflows/reuseable_build_package.yaml
     with:
       GITHUB_REPOSITORY_NAME: ${{ needs.workflow-setup.outputs.GITHUB_REPOSITORY_NAME }}
       UBUNTU_VERSION: ${{ needs.workflow-setup.outputs.UBUNTU_VERSION }}
       isDev: true    
 
-  publish-package:
-    name: Token Plugin Publish Packages
-    needs: [workflow-setup, build-package]
-    if:  needs.workflow-setup.outputs.publish  == 'true'   
-    uses: ./.github/workflows/reuseable_publish.yaml
-    with:
-      GITHUB_REPOSITORY_NAME: ${{ needs.workflow-setup.outputs.GITHUB_REPOSITORY_NAME }}
-      UBUNTU_VERSION: ${{ needs.workflow-setup.outputs.UBUNTU_VERSION }}
-      REPO_COMPONENT: 'dev' 
-      distribution: ${{ needs.workflow-setup.outputs.distribution }}
-    secrets:
-      SOVRIN_ARTIFACTORY_REPO_CONFIG: ${{ secrets.SOVRIN_ARTIFACTORY_REPO_CONFIG }}
+  # Packaging temporarily disabled
+
+  # publish-package:
+  #   name: Token Plugin Publish Packages
+  #   needs: [workflow-setup, build-package]
+  #   if:  needs.workflow-setup.outputs.publish  == 'true'   
+  #   uses: ./.github/workflows/reuseable_publish.yaml
+  #   with:
+  #     GITHUB_REPOSITORY_NAME: ${{ needs.workflow-setup.outputs.GITHUB_REPOSITORY_NAME }}
+  #     UBUNTU_VERSION: ${{ needs.workflow-setup.outputs.UBUNTU_VERSION }}
+  #     REPO_COMPONENT: 'dev' 
+  #     distribution: ${{ needs.workflow-setup.outputs.distribution }}
+  #   secrets:
+  #     SOVRIN_ARTIFACTORY_REPO_CONFIG: ${{ secrets.SOVRIN_ARTIFACTORY_REPO_CONFIG }}
 

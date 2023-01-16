@@ -29,12 +29,48 @@ jobs:
           echo "timestamp=$timestamp"
           echo "::endgroup::"
 
+  get-deb-version:
+    name: Get deb Package Version
+    needs: timestamp
+    runs-on: ubuntu-20.04
+    outputs:
+      deb-package-verion: ${{ steps.version.outputs.debVersion }}
+    steps:
+
+      - name: adding github workspace as safe directory
+        run: git config --global --add safe.directory $GITHUB_WORKSPACE
+
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.8'
+
+      - name: Set up python
+        run: |
+          pip3 install semver
+
+      - name: Set Version with UX-timestamp
+        if: ${{ inputs.isDev }}
+        run: python3 updateVersion.py --timestamp ${{ needs.timestamp.outputs.timestamp }}
+
+      - name: Get current Version
+        id: version
+        run: |
+          version=$(python3 updateVersion.py --getVersion)
+          debVersion=$(sed -r "s/-/~/g" <<< $version)
+          echo "debVersion=$debVersion" >> $GITHUB_OUTPUT
+
   build_token_plugin_release:
     name: Token Plugin Build Packages
-    needs: timestamp
+    needs: [ timestamp, get-deb-version ]
     runs-on: ubuntu-20.04
     container:
       image: ghcr.io/${{ inputs.GITHUB_REPOSITORY_NAME }}/token-plugin-build:${{ inputs.UBUNTU_VERSION }}
+    env:
+      DEB_VERSION: ${{ needs.get-deb-version.outputs.deb-package-verion }}
     steps:
       - name: adding github workspace as safe directory
         run: git config --global --add safe.directory $GITHUB_WORKSPACE
@@ -46,9 +82,18 @@ jobs:
       - name: Get current Version
         id: version
         run: |
+          if [ -f "$GITHUB_OUTPUT" ]; then
+            echo "The file, $GITHUB_OUTPUT, exists."
+          else
+            echo "The file, $GITHUB_OUTPUT, does not exist."
+          fi
+
           version=$(python3 updateVersion.py --getVersion)
-          debVersion=$(sed -r "s/-/~/g" <<< $version)
-          echo "debVersion=$debVersion">>$GITHUB_OUTPUT
+          echo "version: ${version}"
+          debVersion=$(echo $version | sed -r 's/-/~/g')
+          echo "debVersion: ${debVersion}"
+          echo "debVersion=${debVersion}" >> $GITHUB_OUTPUT
+
       - name: Get indy-node version to depend on
         id: node-version
         shell: bash
